@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E1830">
+<title>金穗盲盒抽签池</title>
+<meta property="og:title" content="金穗盲盒抽签池">
+<meta property="og:description" content="点击开始抽签，看看谁是今天的幸运儿">
+<meta property="og:image" content="https://4kwgtksbrrcau.doubaoapps.com/app/app_17fz50fb3uz/assets/bg-stage.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://4kwgtksbrrcau.doubaoapps.com/app/app_17fz50fb3uz/assets/bg-stage.png">
+<meta property="og:type" content="website">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+:root{
+  /* 后台亮场 */
+  --canvas:#F0ECF8;
+  --world:#D9D0EE;
+  --world-2:#C4B7E3;
+  --accent:#7C6BB5;
+  --accent-deep:#5E4E91;
+  --ink:#3B3354;
+  --ink-2:#6B6388;
+  --ink-3:#9A92B5;
+  --white:#FFFFFF;
+  /* 前台暗场 */
+  --stage-bg:#1E1830;
+  --stage-bg2:#2D2445;
+  --stage-text:#E8E1F8;
+  --stage-accent:#B89FF0;
+  --stage-dim:rgba(232,225,248,.5);
+
+  --ease:cubic-bezier(.22,.75,.3,1);
+  --bar:76px;
+  --r-shell:28px;
+  --r-card:16px;
+  --r-control:10px;
+  --r-pill:999px;
+  --shadow-card:0 2px 6px rgba(124,107,181,.08),0 16px 36px -10px rgba(124,107,181,.16),0 48px 90px -40px rgba(124,107,181,.22);
+  --shadow-soft:0 1px 2px rgba(59,51,84,.04),0 8px 20px -6px rgba(59,51,84,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--ink);overflow:hidden;
+  font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+img,svg{display:block}
+input,textarea{font:inherit;outline:none;border:0}
+
+/* ═══ 视图切换 ═══ */
+.view{display:none;width:100%;height:100%}
+.view.active{display:flex;flex-direction:column}
+
+/* ═══ 入口选择 ═══ */
+#view-home{align-items:center;justify-content:center;gap:40px;padding:40px;
+  background:radial-gradient(130% 90% at 50% 8%,#E8E1F5,#D4C9EB 72%)}
+.home-title{font-family:"Noto Serif SC",serif;font-size:36px;font-weight:900;color:var(--ink);text-align:center}
+.home-sub{font-size:14px;color:var(--ink-2);text-align:center;margin-top:8px}
+.home-btns{display:flex;flex-direction:column;gap:16px;width:100%;max-width:280px;margin-top:20px}
+.home-btn{padding:20px;border-radius:var(--r-shell);background:var(--white);
+  box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:6px;align-items:flex-start;
+  transition:transform .2s var(--ease);text-align:left}
+.home-btn:active{transform:scale(.98)}
+.home-btn .hb-icon{width:40px;height:40px;border-radius:12px;background:var(--canvas);
+  display:grid;place-items:center;color:var(--accent);margin-bottom:4px}
+.home-btn .hb-title{font-size:18px;font-weight:700;color:var(--ink)}
+.home-btn .hb-desc{font-size:13px;color:var(--ink-2)}
+.home-btn.stage .hb-icon{background:#2D2445;color:var(--stage-accent)}
+
+/* ═══ 后台视图 ═══ */
+#view-admin{background:var(--canvas)}
+.stage-bg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(130% 90% at 50% 8%,#E8E1F5,#D4C9EB 72%)}
+.stage-bg::before{content:"";position:absolute;inset:-18%;z-index:0;pointer-events:none;opacity:.3;filter:blur(90px);
+  background:radial-gradient(38% 30% at 22% 24%,#B8A6E0,transparent 70%),radial-gradient(42% 34% at 78% 74%,#D4B8E8,transparent 70%)}
+#view-admin .inner{position:relative;z-index:1;width:100%;height:100%;overflow:hidden}
+
+.statusbar{position:absolute;top:0;left:0;right:0;z-index:55;height:44px;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;pointer-events:none;
+  font-size:13px;font-weight:600;color:var(--ink)}
+.sb-r{display:flex;align-items:center;gap:5px}
+.sb-r i{display:block;background:var(--ink);border-radius:1px}
+.sb-r .sig{width:15px;height:10px;clip-path:polygon(0 72%,18% 72%,18% 100%,0 100%,0 72%,27% 46%,45% 46%,45% 100%,27% 100%,27% 46%,54% 22%,72% 22%,72% 100%,54% 100%,54% 22%,82% 0,100% 0,100% 100%,82% 100%)}
+.sb-r .wifi{width:14px;height:10px;clip-path:polygon(50% 100%,32% 74%,68% 74%,50% 100%,50% 66%,20% 40%,28% 30%,72% 30%,80% 40%,50% 66%,50% 24%,8% 12%,14% 2%,86% 2%,92% 12%)}
+.sb-r .bat{width:22px;height:11px;border-radius:3px;background:none;position:relative;box-shadow:inset 0 0 0 1px var(--ink)}
+.sb-r .bat::before{content:"";position:absolute;inset:2px;width:64%;background:var(--ink);border-radius:1px}
+.sb-r .bat::after{content:"";position:absolute;right:-3px;top:3.5px;width:2px;height:4px;background:var(--ink);border-radius:0 1px 1px 0}
+
+.top{position:absolute;top:0;left:0;right:0;z-index:50;pointer-events:none;
+  padding:calc(env(safe-area-inset-top) + 52px) 20px 0;
+  display:flex;align-items:center;justify-content:space-between}
+.pager{font-size:12px;letter-spacing:.1em;color:var(--ink-3)}
+.pager b{color:var(--ink);font-size:15px;font-weight:700}
+.back-btn{font-size:13px;color:var(--accent);pointer-events:auto;display:flex;align-items:center;gap:4px}
+.bars{position:absolute;top:calc(env(safe-area-inset-top) + 78px);left:20px;right:20px;z-index:50;display:flex;gap:3px;pointer-events:none}
+.bars i{flex:1;height:2px;border-radius:2px;background:rgba(124,107,181,.18)}
+.bars i.on{background:var(--accent)}
+
+#deck{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#deck::-webkit-scrollbar{display:none}
+.screen{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(env(safe-area-inset-top) + 100px) 26px calc(var(--bar) + 26px);isolation:isolate}
+.content{position:relative;z-index:1;display:flex;flex-direction:column;gap:18px;width:100%}
+.an{opacity:0;transform:translateY(22px);transition:opacity .75s var(--ease),transform .75s var(--ease)}
+.live .an{opacity:1;transform:none}
+.live .an:nth-child(2){transition-delay:.1s}
+.live .an:nth-child(3){transition-delay:.2s}
+.live .an:nth-child(4){transition-delay:.3s}
+.kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:500}
+h1{font-family:"Noto Serif SC",serif;font-size:32px;font-weight:900;line-height:1.2;color:var(--ink)}
+h2{font-family:"Noto Serif SC",serif;font-size:26px;font-weight:900;line-height:1.25;color:var(--ink)}
+.sub{font-size:14px;line-height:1.7;color:var(--ink-2)}
+
+.dock{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;gap:10px;align-items:center;
+  padding:12px 20px calc(env(safe-area-inset-bottom) + 14px);
+  background:linear-gradient(180deg,transparent,rgba(240,236,248,.92) 42%)}
+.dock .ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid rgba(124,107,181,.28);color:var(--accent)}
+.dock .next{flex:1;height:46px;border-radius:var(--r-pill);background:var(--accent);
+  color:var(--white);font-weight:700;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s var(--ease),opacity .15s}
+.dock .next:active{transform:scale(.97)}
+.dock .next:disabled{opacity:.4}
+
+.toast{position:absolute;left:50%;bottom:calc(var(--bar) + 26px);z-index:70;
+  transform:translate(-50%,14px);opacity:0;pointer-events:none;max-width:78%;
+  padding:11px 18px;border-radius:var(--r-pill);background:var(--ink);color:var(--white);
+  font-size:13.5px;line-height:1.5;transition:opacity .28s var(--ease),transform .28s var(--ease)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+.cover-box{position:relative;width:100%;aspect-ratio:3/4;border-radius:var(--r-shell);overflow:hidden;
+  background:linear-gradient(160deg,var(--world) 0%,var(--world-2) 100%);
+  box-shadow:var(--shadow-card);cursor:pointer;transition:transform .3s var(--ease)}
+.cover-box:active{transform:scale(.98)}
+.cover-box img{width:100%;height:100%;object-fit:cover}
+.cover-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--accent-deep)}
+.cover-ph svg{width:48px;height:48px;opacity:.7}
+.cover-ph span{font-size:13px;letter-spacing:.08em}
+.cover-tag{position:absolute;bottom:14px;left:14px;padding:6px 12px;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.85);backdrop-filter:blur(8px);font-size:11px;font-weight:500;color:var(--accent-deep);letter-spacing:.05em}
+
+.card{background:var(--white);border-radius:var(--r-card);padding:20px;box-shadow:var(--shadow-soft)}
+.card-label{font-size:12px;font-weight:500;color:var(--ink-3);letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.card-label .count{color:var(--accent);font-weight:700}
+textarea{width:100%;min-height:120px;background:var(--canvas);border-radius:var(--r-control);
+  padding:14px;font-size:14px;line-height:1.8;color:var(--ink);resize:none;border:1.5px solid transparent;transition:border-color .2s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--ink-3)}
+.num-input-row{display:flex;align-items:center;gap:12px;background:var(--canvas);border-radius:var(--r-control);padding:4px 4px 4px 16px}
+.num-input-row input{flex:1;background:none;font-size:24px;font-weight:700;color:var(--ink);width:100%;min-width:0}
+.stepper{display:flex;flex-direction:column;gap:2px}
+.stepper button{width:36px;height:32px;border-radius:8px;background:var(--world);color:var(--accent-deep);font-size:16px;font-weight:700;display:grid;place-items:center}
+.stepper button:active{background:var(--world-2)}
+
+/* ═══ 前台展示视图 ═══ */
+#view-stage{background:#FFF3D6;
+  align-items:center;justify-content:flex-end;position:relative;overflow:hidden;
+  height:100dvh}
+.stage-bg-blur{position:absolute;inset:0;z-index:0;width:100%;height:100%;
+  background:url(assets/bg-stage.png) center center / cover no-repeat fixed;
+  filter:none;background-size:cover;background-position:center}
+#view-stage::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,243,214,.15) 0%,rgba(255,243,214,.1) 40%,rgba(255,243,214,.65) 100%)}
+.stage-inner{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:20px;
+  padding:0 20px calc(env(safe-area-inset-bottom) + 8vh);width:100%;pointer-events:auto}
+.stage-cover{display:none}
+.stage-title{display:none}
+.result-card{background:rgba(255,251,235,.85);backdrop-filter:blur(12px);border-radius:20px;
+  padding:24px 20px;box-shadow:0 16px 48px -12px rgba(92,58,30,.18);
+  display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;text-align:center;
+  width:100%;max-width:420px;margin-left:auto;margin-right:auto}
+.stage-winner{font-family:"Noto Serif SC",serif;font-size:clamp(36px,11vw,64px);font-weight:900;text-align:center;
+  color:#5C3A1E;line-height:1.1;min-height:1.2em;word-break:break-all}
+.stage-winners{display:flex;flex-wrap:wrap;gap:16px 24px;justify-content:center;max-width:100%}
+.stage-winner-item{font-family:"Noto Serif SC",serif;font-size:clamp(22px,6vw,40px);font-weight:900;text-align:center;
+  color:#5C3A1E;word-break:break-all}
+.stage-hint{font-size:13px;color:#8B6B4A;letter-spacing:.15em}
+.history-card{width:90%;max-width:340px;max-height:180px;overflow-y:auto;
+  background:rgba(255,251,235,.75);backdrop-filter:blur(10px);
+  border-radius:16px;padding:14px 16px;z-index:2;
+  border:1px solid rgba(255,255,255,.6)}
+.history-title{font-size:12px;font-weight:700;color:#8B6B4A;margin-bottom:8px;letter-spacing:.1em}
+.history-list{display:flex;flex-wrap:wrap;gap:8px}
+.history-item{font-size:14px;color:#5C3A1E;background:rgba(196,183,227,.3);
+  padding:4px 10px;border-radius:999px}
+.stage-ring{width:180px;height:180px;border-radius:50%;display:grid;place-items:center;position:relative;margin-bottom:12px}
+.stage-ring::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,#F59E0B,transparent 30%,transparent 70%,#D97706);
+  animation:spin 1.6s linear infinite}
+.stage-ring::after{content:"";position:absolute;inset:6px;border-radius:50%;background:rgba(255,251,235,.95)}
+.stage-ring .stage-name{position:relative;z-index:1;font-family:"Noto Serif SC",serif;font-size:26px;font-weight:900;
+  color:#5C3A1E;text-align:center;padding:0 16px;max-width:150px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stage-enter{position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:16px;z-index:20;
+  padding:8px 14px;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.7);color:#5C3A1E;font-size:12px;backdrop-filter:blur(10px);
+  border:1px solid rgba(92,58,30,.15)}
+
+/* 密码弹窗 */
+.pwd-modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.5);display:none;
+  align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)}
+.pwd-modal.on{display:flex}
+.pwd-box{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:320px;
+  box-shadow:0 24px 60px -12px rgba(0,0,0,.2);display:flex;flex-direction:column;gap:16px}
+.pwd-title{font-size:18px;font-weight:700;text-align:center;color:var(--ink)}
+.pwd-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #E4E0F0;
+  font-size:15px;outline:none}
+.pwd-input:focus{border-color:var(--accent)}
+.pwd-err{font-size:12px;color:#E53E3E;text-align:center;display:none}
+.pwd-err.on{display:block}
+.pwd-btns{display:flex;gap:10px;margin-top:4px}
+.pwd-cancel{flex:1;height:44px;border-radius:999px;background:#F3F0FA;color:var(--ink-2);font-weight:500}
+.pwd-ok{flex:1;height:44px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700}
+
+/* 隐藏平台水印 */
+[class*="watermark"],[class*="Watermark"],[class*="ai-generated"],[class*="badge"],
+[class*="float"],[class*="Float"],[class*="fab"],[class*="FAB"],
+[class*="bottom-right"],[class*="BottomRight"],[class*="mira"],[class*="Mira"],
+[class*="byte"],[class*="Byte"],[id*="watermark"],[id*="badge"],
+div[style*="position: fixed"][style*="right: 0px"][style*="bottom: 0px"]{
+  display:none !important;
+}
+
+/* 大屏（桌面投屏）适配 */
+@media(min-width:760px){
+  #view-stage{background-position:center center;background-size:cover}
+  .stage-inner{padding:0 40px 10vh;justify-content:center;height:100%}
+  .result-card{padding:40px 60px;max-width:680px}
+  .stage-ring{width:260px;height:260px}
+  .stage-ring .stage-name{font-size:40px;max-width:220px}
+  #posterTitle{margin-top:calc(env(safe-area-inset-top) + 20px)!important}
+}
+
+@media(min-width:760px){
+  /* 桌面端后台：全屏宽屏，去掉手机壳 */
+  #view-admin{display:block}
+  #view-admin .inner{width:min(900px,92vw);height:92vh;border-radius:24px;
+    box-shadow:0 20px 60px rgba(94,78,145,.2);margin:4vh auto;overflow:hidden}
+  #view-admin .screen{padding:40px 60px}
+  .an.kicker{font-size:14px}
+  .an h2{font-size:32px}
+  .cfg-row{padding:16px 20px}
+}
+/* ═══ 手机端适配 ═══ */
+@media(max-width:759px){
+  #view-home{padding:60px 24px 40px}
+  .home-title{font-size:32px}
+  .home-btns{max-width:100%}
+  .home-btn{padding:18px}
+
+  .screen{padding:calc(env(safe-area-inset-top) + 80px) 20px calc(var(--bar) + 20px)}
+  .top{padding:calc(env(safe-area-inset-top) + 40px) 16px 0}
+  .bars{top:calc(env(safe-area-inset-top) + 62px);left:16px;right:16px}
+  .dock{padding:10px 16px calc(env(safe-area-inset-bottom) + 12px)}
+  .dock .next{height:50px;font-size:15px}
+  .dock .ic{width:50px;height:50px}
+
+  #view-stage{background-position:center center;background-size:cover}
+  .stage-inner{padding:0 20px calc(env(safe-area-inset-bottom) + 8vh);gap:20px}
+  .result-card{padding:24px 16px;border-radius:20px;width:calc(100% - 32px);max-width:360px;margin:0 auto}
+  .stage-winner{font-size:clamp(28px,9vw,48px)}
+  .stage-inner{gap:16px}
+  .result-names{gap:8px !important}
+  .result-names span{font-size:14px !important;padding:4px 10px !important}
+  .stage-winners{gap:14px 20px;max-width:100%}
+  .stage-winner-item{font-size:clamp(20px,6vw,32px)}
+  .stage-ring{width:160px;height:160px}
+  .stage-ring .stage-name{font-size:22px;max-width:140px}
+  .stage-hint{font-size:13px;letter-spacing:.15em}
+  .stage-enter{top:calc(env(safe-area-inset-top) + 12px);right:12px;padding:8px 14px;font-size:12px}
+
+  #nameList{max-height:200px}
+}
+@media(prefers-reduced-motion:reduce){.an{opacity:1!important;transform:none!important}*{animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ═══ 入口选择 ═══ -->
+<div class="view active" id="view-home">
+  <div>
+    <div class="home-title">金穗盲盒抽签池</div>
+    <div class="home-sub">香芋紫高级版 · 前后台双模式</div>
+  </div>
+  <div class="home-btns">
+    <button class="home-btn" onclick="goAdmin()">
+      <div class="hb-icon">
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M128,128a48,48,0,1,0-48-48A48,48,0,0,0,128,128Zm0,16c-32,0-96,16-96,48v32H224V192C224,160,160,144,128,144Z"/></svg>
+      </div>
+      <div class="hb-title">后台设置</div>
+      <div class="hb-desc">上传封面、导入名单、配置抽奖规则</div>
+    </button>
+    <button class="home-btn stage" onclick="goStage()">
+      <div class="hb-icon">
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M232.49,149.33c-.37-.11-9.37-2.86-18.75-4.44a122.11,122.11,0,0,1-9.79-3.17c10.53-25.56,12.88-53.13,7.4-79.67a125.11,125.11,0,0,0-2.17-8.23c-.28-.94-.58-1.88-.9-2.82l-.24-.69c-.14-.39-.28-.78-.44-1.17a9.66,9.66,0,0,0-17.87-2.74c-.08.1-7.72,10.08-22.91,16.62-17.21,7.39-42.84,11.2-74.73,11.2-11.59,0-22.56-.54-32.66-1.61C50.78,68.14,35.65,49.92,34.99,49.13A9.66,9.66,0,0,0,18.06,47.72c-.16.39-.3.78-.44,1.17l-.24.69c-.32.94-.62,1.88-.9,2.82a125.11,125.11,0,0,0-2.17,8.23c-5.48,26.54-3.13,54.11,7.4,79.67a122.11,122.11,0,0,1-9.79,3.17c-9.38,1.58-18.38,4.33-18.75,4.44a9.66,9.66,0,0,0-5.8,13.87l.24.45c.14.26,14.66,26.98,54.12,44.79,15.31,6.89,32.13,12.07,50.06,15.43a201.7,201.7,0,0,0,31.18,4.07V224H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16h-16v-17.4a201.7,201.7,0,0,0,31.18-4.07c17.93-3.36,34.75-8.54,50.06-15.43,39.46-17.81,53.98-44.53,54.12-44.79l.24-.45A9.66,9.66,0,0,0,232.49,149.33Z"/></svg>
+      </div>
+      <div class="hb-title">前台展示</div>
+      <div class="hb-desc">大屏投屏模式，展示抽奖结果</div>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ 后台视图 ═══ -->
+<div class="view" id="view-admin">
+  <div class="stage-bg"></div>
+  <div class="inner">
+    <div class="top">
+      <div class="back-btn" onclick="goHome()">← 返回入口</div>
+      <div class="pager"><b id="pgNow">01</b> / <span id="pgAll">1</span></div>
+    </div>
+    <div class="bars" id="bars"></div>
+
+    <div id="deck">
+      <!-- 屏1：封面上传 -->
+      <section class="screen" data-t="1">
+        <div class="content" style="align-items:center">
+          <div class="an kicker">Lucky Draw</div>
+          <h1 class="an" style="text-align:center">金穗盲盒抽签池</h1>
+          <div class="an cover-box" id="coverBox">
+            <img id="coverImg" style="display:none" alt="封面">
+            <div class="cover-ph" id="coverPh">
+              <svg viewBox="0 0 256 256" fill="currentColor"><path d="M208,56H48A16,16,0,0,0,32,72V184a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V72A16,16,0,0,0,208,56Zm0,128H179.31L158.34,163.31a16,16,0,0,0-22.62,0L114.34,184.69a16,16,0,0,1-22.62,0L74.34,155.31a16,16,0,0,0-22.62,0L48,179.31V72H208ZM88,104a24,24,0,1,1,24,24A24,24,0,0,1,88,104Z"/></svg>
+              <span>点击上传封面</span>
+            </div>
+            <div class="cover-tag">香芋紫 · 高级版</div>
+          </div>
+          <p class="an sub" style="text-align:center">上传你的活动封面图，打造专属抽奖仪式感</p>
+
+          <!-- 分享预览图设置 -->
+          <div class="an card" style="width:100%;margin-top:8px">
+            <div class="card-label"><span>分享预览图（发给别人时的卡片图）</span></div>
+            <div id="shareBox" style="border:2px dashed #C4B7E3;border-radius:12px;padding:16px;text-align:center;cursor:pointer" onclick="document.getElementById('shareInput').click()">
+              <div id="sharePh" style="color:var(--ink-3);font-size:13px">点击上传分享预览图</div>
+              <img id="shareImg" style="display:none;max-width:100%;border-radius:8px" alt="">
+            </div>
+            <!-- 模拟分享卡片 -->
+            <div style="margin-top:14px;padding:14px;background:#F8F7FB;border-radius:12px">
+              <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px">分享效果预览</div>
+              <div style="display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:10px;padding:10px">
+                <div style="flex:1">
+                  <div style="font-size:14px;font-weight:600;color:var(--ink);line-height:1.4" id="previewTitle">金穗盲盒抽签池</div>
+                  <div style="font-size:11px;color:var(--ink-3);margin-top:6px">4kwgtksbrrcau.doubaoapps.com</div>
+                </div>
+                <div id="previewThumb" style="width:60px;height:60px;border-radius:6px;background:#E4E0F0;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:10px">无图</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="coverInput" accept="image/*" hidden>
+        <input type="file" id="shareInput" accept="image/*" hidden>
+      </section>
+
+      <!-- 屏2：名单导入 -->
+      <section class="screen" data-t="2">
+        <div class="content">
+          <div class="an kicker">Step 01</div>
+          <h2 class="an">导入抽签名单</h2>
+          <div class="an card" style="background:rgba(196,183,227,.25);backdrop-filter:blur(10px);padding:14px">
+            <div class="card-label">
+              <span>批量粘贴（每行一人）</span>
+              <span class="count"><span id="nameCount">0</span> 人 · <span id="ticketCount">0</span> 签</span>
+            </div>
+            <textarea id="nameInput" style="background:rgba(255,255,255,.55);min-height:70px;font-size:13px" placeholder="张三&#10;李四&#10;王五..."></textarea>
+          </div>
+          <div class="an card" style="padding:0;overflow:hidden">
+            <div style="padding:14px 16px 8px;font-size:12px;font-weight:500;color:var(--ink-3)">名单列表 · 点击 ± 调整签数</div>
+            <div id="nameList" style="max-height:180px;overflow-y:auto;padding:0 8px 12px;display:flex;flex-direction:column;gap:4px">
+              <div style="padding:12px;text-align:center;color:var(--ink-3);font-size:13px">暂无名单，请先粘贴导入</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 屏3：签数与抽取设置 -->
+      <section class="screen" data-t="3">
+        <div class="content">
+          <div class="an kicker">Step 02</div>
+          <h2 class="an">抽奖规则设置</h2>
+          <div class="an card">
+            <div class="card-label"><span>抽奖口令（前台需输入才能抽）</span></div>
+            <input type="text" id="drawPasscode" placeholder="留空则无需口令" style="width:100%;padding:12px 14px;border-radius:10px;background:var(--canvas);font-size:15px">
+          </div>
+          <div class="an card">
+            <div class="card-label"><span>总抽签次数</span></div>
+            <div class="num-input-row">
+              <input type="number" id="maxDraws" value="1" min="1">
+              <div class="stepper">
+                <button data-target="maxDraws" data-step="1" data-dir="up">+</button>
+                <button data-target="maxDraws" data-step="1" data-dir="down">−</button>
+              </div>
+            </div>
+          </div>
+          <div class="an card">
+            <div class="card-label"><span>一次性抽出数量</span></div>
+            <div class="num-input-row">
+              <input type="number" id="drawCount" value="15" min="1">
+              <div class="stepper">
+                <button data-target="drawCount" data-step="1" data-dir="up">+</button>
+                <button data-target="drawCount" data-step="1" data-dir="down">−</button>
+              </div>
+            </div>
+          </div>
+          <p class="an sub">设置每次抽签抽出的人数，支持一次抽多人。</p>
+        </div>
+      </section>
+
+      <!-- 屏4：进入前台 -->
+      <section class="screen" data-t="4">
+        <div class="content" style="align-items:center">
+          <div class="an kicker" style="text-align:center">Ready</div>
+          <h2 class="an" style="text-align:center">设置完成</h2>
+          <div class="an card" style="width:100%;text-align:center;padding:28px 20px">
+            <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">奖池已就绪</div>
+            <div style="font-family:'Noto Serif SC',serif;font-size:36px;font-weight:900;color:var(--accent)">
+              <span id="poolCount">0</span> 人
+            </div>
+            <div style="font-size:13px;color:var(--ink-3);margin-top:8px">每次抽 <span id="poolDraw">1</span> 人</div>
+          </div>
+          <div class="an card" style="width:100%;text-align:left;padding:14px 16px" id="adminHistoryCard">
+            <div class="card-label"><span>中签记录</span><span class="count" id="adminHistoryCount">0 人</span></div>
+            <!-- 期数配置 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px;background:#F8F7FC;border-radius:8px">
+              <div style="font-size:12px;color:var(--ink-2)">海报期数</div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:12px;color:var(--ink-3)">第</span>
+                <input type="number" id="periodInput" value="88" min="1" style="width:50px;padding:4px;text-align:center;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:700;color:var(--ink)">
+                <span style="font-size:12px;color:var(--ink-3)">期</span>
+              </div>
+            </div>
+            <!-- 操作按钮 -->
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button id="exportHistoryBtn" style="flex:1;padding:7px;border-radius:6px;background:#fff;border:1px solid var(--line);color:var(--ink);font-size:12px;font-weight:600">导出CSV</button>
+              <button id="clearHistoryBtn" style="flex:1;padding:7px;border-radius:6px;background:#FFF5F5;border:1px solid #FECACA;color:#DC2626;font-size:12px;font-weight:600">清空</button>
+            </div>
+            <!-- 分组记录 -->
+            <div id="adminHistoryList" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+              <div style="color:var(--ink-3);font-size:12px;width:100%;text-align:center;padding:10px 0">暂无中签记录</div>
+            </div>
+          </div>
+          <p class="an sub" style="text-align:center">进入前台大屏模式，开始正式抽签</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="dock">
+      <button class="ic" id="btnPrev" aria-label="上一页">
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M224,160a8,8,0,0,1-2.34,5.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,56,160v-48a8,8,0,0,1,13.66-5.66L128,172.69l58.34-58.35A8,8,0,0,1,200,112v48A8,8,0,0,1,224,160Z" transform="rotate(180 128 128)"/></svg>
+      </button>
+      <button class="next" id="btnNext">开始设置 ↓</button>
+      <button class="ic" id="btnShare" aria-label="复制前台链接" onclick="copyStageLink()">
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,109.66l-96-96a8,8,0,0,0-11.32,0l-96,96A8,8,0,0,0,32,115.31V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V115.31A8,8,0,0,0,229.66,109.66ZM208,208H48V116.69l88-88,88,88Z"/><path d="M104,168a8,8,0,0,0,8,8h32a8,8,0,0,0,0-16H112A8,8,0,0,0,104,168Z"/></svg>
+      </button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<!-- ═══ 前台展示视图 ═══ -->
+<div class="view" id="view-stage">
+  <div class="stage-bg-blur" id="stageBgBlur"></div>
+  <button class="stage-enter" onclick="openPwdModal()">⚙ 后台设置</button>
+  <div class="stage-inner">
+    <!-- 海报期数标题 -->
+    <div id="posterTitle" style="margin-top:calc(env(safe-area-inset-top) + 40px)">
+      <div style="display:inline-block;padding:8px 20px;border-radius:999px;background:rgba(255,255,255,.75);backdrop-filter:blur(10px);
+        font-family:'Noto Serif SC',serif;font-size:clamp(13px,4vw,16px);font-weight:700;color:#5C3A1E;letter-spacing:1px">
+        第 <span id="posterPeriod" style="color:#B8860B">88</span> 期金穗盲盒中签名单
+      </div>
+    </div>
+    <div class="stage-cover" id="stageCover"><img id="stageCoverImg" alt=""></div>
+    <div class="stage-title" id="stageTitle">抽签奖池</div>
+    <div class="stage-ring" id="stageRing" style="display:none">
+      <div class="stage-name" id="stageAnimName">???</div>
+    </div>
+    <div class="result-card" id="resultCard" style="cursor:pointer">
+      <div class="stage-winner" id="stageWinner">准备就绪</div>
+      <div class="stage-winners" id="stageWinners"></div>
+      <button id="saveImgBtn" style="display:none;margin-top:12px;padding:8px 20px;border-radius:999px;
+        background:rgba(255,255,255,.7);color:#5C3A1E;font-size:13px;border:1px solid rgba(92,58,30,.15)"
+        onclick="event.stopPropagation();saveResultImg()">长按保存结果图</button>
+    </div>
+    <div class="stage-hint" id="stageHint">点击按钮开始抽签</div>
+    <!-- 历史中签名单 -->
+    <div class="history-card" id="historyCard" style="display:none">
+      <div class="history-title">中签名单</div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 密码弹窗（后台入口） -->
+<div class="pwd-modal" id="pwdModal">
+  <div class="pwd-box">
+    <div class="pwd-title">后台验证</div>
+    <input type="password" class="pwd-input" id="pwdInput" placeholder="请输入访问密码">
+    <div class="pwd-err" id="pwdErr">密码错误，请重试</div>
+    <div class="pwd-btns">
+      <button class="pwd-cancel" onclick="closePwdModal()">取消</button>
+      <button class="pwd-ok" onclick="checkPwd()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 前台抽奖口令弹窗 -->
+<div class="pwd-modal" id="drawPwdModal">
+  <div class="pwd-box">
+    <div class="pwd-title">抽签口令</div>
+    <input type="password" class="pwd-input" id="drawPwdInput" placeholder="请输入抽签口令">
+    <div class="pwd-err" id="drawPwdErr">口令错误，请重试</div>
+    <div class="pwd-btns">
+      <button class="pwd-ok" onclick="checkDrawPwd()">确认开始</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══ 视图路由 ═══ */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goHome(){
+  if(location.hash!=='#/') history.replaceState(null,'','#/');
+  showView('view-home');
+}
+const ADMIN_PWD='perfectALL7#';
+function openPwdModal(){
+  document.getElementById('pwdModal').classList.add('on');
+  document.getElementById('pwdInput').value='';
+  document.getElementById('pwdErr').classList.remove('on');
+  setTimeout(()=>document.getElementById('pwdInput').focus(),100);
+}
+function closePwdModal(){
+  document.getElementById('pwdModal').classList.remove('on');
+}
+function checkPwd(){
+  const v=document.getElementById('pwdInput').value;
+  if(v===ADMIN_PWD){
+    closePwdModal();
+    sessionStorage.setItem('lottery-auth','1');
+    goAdmin();
+  }else{
+    document.getElementById('pwdErr').classList.add('on');
+  }
+}
+document.getElementById('pwdInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter')checkPwd();
+});
+function goAdmin(){
+  saveData();
+  history.replaceState(null,'','#/admin');
+  showView('view-admin');
+  setTimeout(()=>{ window.dispatchEvent(new Event('resize')); },100);
+}
+function goStage(){
+  saveData();
+  loadData();
+  history.replaceState(null,'','#/stage');
+  showView('view-stage');
+  resetStage();
+}
+function copyStageLink(){
+  const url=location.href.split('#')[0]+'#/stage';
+  navigator.clipboard.writeText(url).then(()=>toast('前台链接已复制')).catch(()=>toast('复制失败，请手动复制地址栏'));
+}
+
+/* ═══ 数据持久化 ═══ */
+function saveData(){
+  try{
+    localStorage.setItem('lottery-cover', document.getElementById('coverImg').src||'');
+    localStorage.setItem('lottery-names-v2', JSON.stringify(state.names||[]));
+    localStorage.setItem('lottery-tickets-v2', document.getElementById('totalTickets').value||'1');
+    localStorage.setItem('lottery-draw-v2', document.getElementById('drawCount').value||'15');
+    localStorage.setItem('lottery-passcode-v2', document.getElementById('drawPasscode').value||'');
+    localStorage.setItem('lottery-maxdraws-v2', document.getElementById('maxDraws').value||'1');
+  }catch(e){}
+}
+function loadData(){
+  try{
+    const cover=localStorage.getItem('lottery-cover');
+    if(cover){
+      document.getElementById('coverImg').src=cover;
+      document.getElementById('coverImg').style.display='block';
+      document.getElementById('coverPh').style.display='none';
+      /* 前台全屏背景用上传的封面图 */
+      document.getElementById('stageBgBlur').style.background=`url(${cover}) center top / cover no-repeat`;
+    }
+    /* 分享预览图 */
+    const shareImgData=localStorage.getItem('lottery-share-img');
+    if(shareImgData){
+      document.getElementById('shareImg').src=shareImgData;
+      document.getElementById('shareImg').style.display='block';
+      document.getElementById('sharePh').style.display='none';
+      document.getElementById('previewThumb').innerHTML=`<img src="${shareImgData}" style="width:100%;height:100%;object-fit:cover">`;
+      let og=document.querySelector('meta[property="og:image"]');
+      if(!og){
+        og=document.createElement('meta');
+        og.setAttribute('property','og:image');
+        document.head.appendChild(og);
+      }
+      og.setAttribute('content',shareImgData);
+    }
+    /* 第88期默认名单（按手机号数量设签数） */
+    const DEFAULT_NAMES=[
+      {"name":"陈攀宇","weight":2},{"name":"朱锐彪","weight":1},{"name":"胡胜","weight":3},{"name":"陈天宇","weight":3},
+      {"name":"刘洪之","weight":2},{"name":"姜香如","weight":2},{"name":"钱云","weight":2},{"name":"韩乐","weight":1},
+      {"name":"赵学堃","weight":1},{"name":"梁佳豪","weight":3},{"name":"许韵娟","weight":2},{"name":"黄巧","weight":3},
+      {"name":"贺思铭","weight":2},{"name":"孙宇","weight":2},{"name":"张丹","weight":3},{"name":"卫泽华","weight":2},
+      {"name":"黄德强","weight":2},{"name":"崔体英","weight":2},{"name":"彭程","weight":2},{"name":"汪俊宇","weight":1},
+      {"name":"史龙方","weight":2},{"name":"陈茜","weight":2},{"name":"于振伟","weight":1},{"name":"冉浩文","weight":1},
+      {"name":"冯倩","weight":1},{"name":"周杰","weight":1},{"name":"李岩昊","weight":1},{"name":"李甜甜","weight":1},
+      {"name":"武擎扬","weight":1},{"name":"谢智","weight":1},{"name":"钟小军","weight":1},{"name":"陈博","weight":1},
+      {"name":"陈萌","weight":1},{"name":"魏贺妍","weight":1},{"name":"刘宗斌","weight":1},{"name":"吴鑫","weight":1},
+      {"name":"张君君","weight":2},{"name":"侯辰","weight":1},{"name":"王博研","weight":2},{"name":"吴一娜","weight":2},
+      {"name":"刘安瑄","weight":1},{"name":"华岗岗","weight":1},{"name":"周稳领","weight":1},{"name":"安玉洁","weight":1},
+      {"name":"徐腾飞","weight":1},{"name":"李顺","weight":1},{"name":"王宇航","weight":1},{"name":"胡磊","weight":1},
+      {"name":"高梦茹","weight":1},{"name":"白洋","weight":1},{"name":"姬炳涛","weight":1},{"name":"周建宝","weight":2},
+      {"name":"余博","weight":1},{"name":"尤笑娜","weight":1},{"name":"张馨文","weight":1},{"name":"张高升","weight":1},
+      {"name":"李国杨","weight":1},{"name":"杨文欣","weight":1},{"name":"田小龙","weight":1},{"name":"余郑虎","weight":1},
+      {"name":"王璐遥","weight":2},{"name":"张思恒","weight":1},{"name":"杜俊锋","weight":1},{"name":"吴钦彬","weight":1},
+      {"name":"朱紫荆","weight":1},{"name":"汪涌泉","weight":1},{"name":"王玉炎","weight":1},{"name":"蒋家聪","weight":1},
+      {"name":"贾佳彤","weight":1},{"name":"魏震寰","weight":1},{"name":"韩志康","weight":1},{"name":"周岐川","weight":1},
+      {"name":"刘钊","weight":1},{"name":"姜正","weight":1},{"name":"孙瑶瑶","weight":1},{"name":"邹文雅","weight":1},
+      {"name":"郭克金","weight":1},{"name":"魏萌萌","weight":1},{"name":"刘兴文","weight":1},{"name":"朱同艳","weight":1},
+      {"name":"朱春波","weight":1},{"name":"李阳曦","weight":1},{"name":"高宇","weight":1},{"name":"张泽浩","weight":1},
+      {"name":"暴冰玉","weight":1},{"name":"赵智乐","weight":1},{"name":"于东旭","weight":1},{"name":"冯志欣","weight":1},
+      {"name":"吕帅旭","weight":1},{"name":"吴启琛","weight":1},{"name":"唐宇东","weight":1},{"name":"孟祥登","weight":1},
+      {"name":"尚欣欣","weight":1},{"name":"尹超","weight":1},{"name":"张国军","weight":1},{"name":"彭磊","weight":1},
+      {"name":"徐妍灵","weight":1},{"name":"戈婷玉","weight":1},{"name":"李砚哲","weight":1},{"name":"李胜楠","weight":1},
+      {"name":"李超群","weight":1},{"name":"李静","weight":1},{"name":"林高磊","weight":1},{"name":"毛文帅","weight":1},
+      {"name":"王阳阳","weight":1},{"name":"申豪强","weight":1},{"name":"范晨","weight":1},{"name":"赵志丹","weight":1},
+      {"name":"赵思程","weight":1},{"name":"陈志","weight":1},{"name":"侯永涛","weight":1},{"name":"陈立奇","weight":1},
+      {"name":"侯海娇","weight":1},{"name":"张贵军","weight":1},{"name":"徐珂","weight":1},{"name":"王华飞","weight":1},
+      {"name":"王博","weight":1},{"name":"王纪焰","weight":1},{"name":"王金文","weight":1},{"name":"索丽娜","weight":1},
+      {"name":"苗梓健","weight":1},{"name":"钱继祥","weight":1},{"name":"阳剑","weight":1},{"name":"陈光辉","weight":1},
+      {"name":"黄敬远","weight":1},{"name":"陆谦","weight":1},{"name":"张沛","weight":1},{"name":"王可","weight":1},
+      {"name":"郑子臣","weight":1},{"name":"闫晓童","weight":1},{"name":"苏水龙","weight":1},{"name":"崔建秋","weight":1},
+      {"name":"杨天宇","weight":1},{"name":"王子硕","weight":1},{"name":"范鹏","weight":1},{"name":"陈焕","weight":1},
+      {"name":"马潇潇","weight":1},{"name":"邢淼","weight":1}
+    ];
+    const saved=localStorage.getItem('lottery-names-v2');
+    if(saved){
+      state.names=JSON.parse(saved);
+    }else{
+      state.names=DEFAULT_NAMES;
+      localStorage.setItem('lottery-names-v2', JSON.stringify(DEFAULT_NAMES));
+    }
+    nameInput.value=state.names.map(n=>n.weight>1?`${n.name}:${n.weight}`:n.name).join('\n');
+    document.getElementById('totalTickets').value=localStorage.getItem('lottery-tickets-v2')||'1';
+    document.getElementById('drawCount').value=localStorage.getItem('lottery-draw-v2')||'15';
+    document.getElementById('drawPasscode').value=localStorage.getItem('lottery-passcode-v2')||'';
+    document.getElementById('maxDraws').value=localStorage.getItem('lottery-maxdraws-v2')||'1';
+    renderNameList();
+  }catch(e){}
+}
+
+/* ═══ 后台交互 ═══ */
+const deck=document.getElementById('deck');
+const screens=[...document.querySelectorAll('.screen')];
+const bars=document.getElementById('bars');
+bars.innerHTML=screens.map(()=>'<i></i>').join('');
+const barEls=[...bars.children];
+document.getElementById('pgAll').textContent=String(screens.length).padStart(2,'0');
+let cur=0;
+const go=i=>screens[Math.max(0,Math.min(screens.length-1,i))]
+  .scrollIntoView({behavior:'smooth',block:'start'});
+
+const toastEl=document.getElementById('toast');let toastT;
+function toast(msg){
+  toastEl.textContent=msg;toastEl.classList.add('on');
+  clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),1600);
+}
+
+const btnNext=document.getElementById('btnNext');
+const nextLabels=['开始设置 ↓','确认名单 ↓','进入前台 →','前往大屏展示 🎉'];
+function setCur(i){
+  cur=i;
+  document.getElementById('pgNow').textContent=String(i+1).padStart(2,'0');
+  barEls.forEach((b,k)=>b.classList.toggle('on',k<=i));
+  btnNext.textContent=nextLabels[i]||'继续 ↓';
+  if(i===3){
+    const list=getNames();
+    document.getElementById('poolCount').textContent=list.length+' 人 · '+list.reduce((s,x)=>s+x.weight,0)+' 签';
+    document.getElementById('poolDraw').textContent=document.getElementById('drawCount').value;
+  }
+}
+
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.intersectionRatio>0.55){e.target.classList.add('live');setCur(screens.indexOf(e.target));}
+}),{root:deck,threshold:[0.55]});
+screens.forEach(s=>io.observe(s));
+
+btnNext.onclick=()=>{
+  if(cur===1){
+    if(getNames().length===0){toast('请先粘贴至少一个名字');return;}
+  }
+  if(cur===3){goStage();return;}
+  go(cur+1);
+};
+document.getElementById('btnPrev').onclick=()=>go(cur-1);
+
+/* 封面上传 */
+const coverBox=document.getElementById('coverBox');
+const coverInput=document.getElementById('coverInput');
+const coverImg=document.getElementById('coverImg');
+const coverPh=document.getElementById('coverPh');
+coverBox.onclick=()=>coverInput.click();
+coverInput.onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    coverImg.src=ev.target.result;coverImg.style.display='block';coverPh.style.display='none';
+    document.getElementById('stageCoverImg').src=ev.target.result;
+    document.getElementById('stageCover').classList.add('on');
+    document.getElementById('stageBgBlur').style.background=`url(${ev.target.result}) center top / cover no-repeat`;
+    toast('封面已上传');
+  };
+  r.readAsDataURL(f);
+};
+
+/* 分享预览图上传 */
+const shareInput=document.getElementById('shareInput');
+const shareImg=document.getElementById('shareImg');
+const sharePh=document.getElementById('sharePh');
+const previewThumb=document.getElementById('previewThumb');
+shareInput.onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    shareImg.src=ev.target.result;shareImg.style.display='block';sharePh.style.display='none';
+    previewThumb.innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+    localStorage.setItem('lottery-share-img',ev.target.result);
+    /* 更新 og:image */
+    let og=document.querySelector('meta[property="og:image"]');
+    if(!og){
+      og=document.createElement('meta');
+      og.setAttribute('property','og:image');
+      document.head.appendChild(og);
+    }
+    og.setAttribute('content',ev.target.result);
+    toast('分享图已设置');
+  };
+  r.readAsDataURL(f);
+};
+
+/* 名单：state.names 为数据源，textarea 是批量导入入口 */
+const nameInput=document.getElementById('nameInput');
+const nameCount=document.getElementById('nameCount');
+const ticketCount=document.getElementById('ticketCount');
+const nameListEl=document.getElementById('nameList');
+let state={names:[]};
+
+function parseNamesFromText(text){
+  return text.split('\n').map(s=>s.trim()).filter(Boolean).map(line=>{
+    const parts=line.split(/[:：]/);
+    const name=parts[0].trim();
+    const weight=Math.max(1,parseInt(parts[1])||1);
+    return {name,weight};
+  }).filter(x=>x.name);
+}
+function getNames(){return state.names;}
+function updateNameCount(){
+  nameCount.textContent=state.names.length;
+  ticketCount.textContent=state.names.reduce((s,x)=>s+x.weight,0);
+}
+function renderNameList(){
+  updateNameCount();
+  if(state.names.length===0){
+    nameListEl.innerHTML='<div style="padding:12px;text-align:center;color:var(--ink-3);font-size:13px">暂无名单，请先粘贴导入</div>';
+    return;
+  }
+  nameListEl.innerHTML=state.names.map((n,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--canvas);border-radius:8px">
+      <div style="flex:1;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.name}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="adjustWeight(${i},-1)" style="width:24px;height:24px;border-radius:6px;background:var(--world);color:var(--accent-deep);font-size:14px;font-weight:700">−</button>
+        <span style="font-size:13px;font-weight:700;color:var(--accent);min-width:20px;text-align:center">${n.weight}</span>
+        <button onclick="adjustWeight(${i},1)" style="width:24px;height:24px;border-radius:6px;background:var(--world);color:var(--accent-deep);font-size:14px;font-weight:700">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+function adjustWeight(i,delta){
+  state.names[i].weight=Math.max(1,state.names[i].weight+delta);
+  renderNameList();
+  saveData();
+}
+nameInput.oninput=()=>{
+  state.names=parseNamesFromText(nameInput.value);
+  renderNameList();
+};
+
+/* 步进器 */
+document.querySelectorAll('.stepper button').forEach(btn=>{
+  btn.onclick=e=>{
+    e.stopPropagation();
+    const t=document.getElementById(btn.dataset.target);
+    const step=+btn.dataset.step*(btn.dataset.dir==='up'?1:-1);
+    t.value=Math.max(1,+t.value+step);
+  };
+});
+
+/* ═══ 前台展示 ═══ */
+const stageRing=document.getElementById('stageRing');
+const stageAnimName=document.getElementById('stageAnimName');
+const stageWinner=document.getElementById('stageWinner');
+const stageWinners=document.getElementById('stageWinners');
+const stageHint=document.getElementById('stageHint');
+let drawTimer=null;
+let drawnPool=[];
+let drawPassUnlocked=false;
+let remainingDraws=99;
+
+function renderHistory(){
+  let history=JSON.parse(localStorage.getItem('lottery-history')||'[]');
+  /* 兼容旧数据 */
+  if(history.length>0 && (typeof history[0]==='string' || history[0].name)){
+    const oldNames=history.map(i=>typeof i==='string'?i:i.name);
+    history=[{time:history[0].time||'历史记录',names:oldNames}];
+    localStorage.setItem('lottery-history',JSON.stringify(history));
+  }
+  /* 前台不显示历史，只更新后台记录 */
+  const adminList=document.getElementById('adminHistoryList');
+  const adminCount=document.getElementById('adminHistoryCount');
+  if(adminList && adminCount){
+    const total=history.reduce((sum,g)=>sum+g.names.length,0);
+    adminCount.textContent=`${total} 人 · ${history.length} 次`;
+    if(history.length>0){
+      /* 倒序展示，最新的在最上面 */
+      adminList.innerHTML=history.slice().reverse().map((group,revIdx)=>{
+        const idx=history.length-1-revIdx;
+        return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
+              ${group.time} · ${group.names.length}人
+            </div>
+            <button onclick="deleteHistoryGroup(${idx})" style="border:none;background:transparent;color:#DC2626;font-size:11px;cursor:pointer;padding:2px 6px">删除</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${group.names.map(n=>`<span style="padding:3px 8px;border-radius:6px;background:#F3F0FA;font-size:11px;color:var(--ink-2)">${n}</span>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    }else{
+      adminList.innerHTML='<div style="color:var(--ink-3);font-size:12px;width:100%;text-align:center;padding:10px 0">暂无中签记录</div>';
+    }
+  }
+}
+/* 删除单组记录 */
+function deleteHistoryGroup(idx){
+  let history=JSON.parse(localStorage.getItem('lottery-history')||'[]');
+  history.splice(idx,1);
+  localStorage.setItem('lottery-history',JSON.stringify(history));
+  renderHistory();
+  toast('已删除该组记录');
+}
+/* 导出CSV */
+document.addEventListener('DOMContentLoaded',()=>{
+  const exportBtn=document.getElementById('exportHistoryBtn');
+  const clearBtn=document.getElementById('clearHistoryBtn');
+  const periodInput=document.getElementById('periodInput');
+  if(periodInput){
+    periodInput.value=localStorage.getItem('lottery-period')||'88';
+    periodInput.addEventListener('change',()=>{
+      localStorage.setItem('lottery-period',periodInput.value);
+      updatePosterTitle();
+    });
+  }
+  if(exportBtn){
+    exportBtn.addEventListener('click',()=>{
+      const history=JSON.parse(localStorage.getItem('lottery-history')||'[]');
+      if(history.length===0){toast('暂无记录可导出');return;}
+      let csv='\uFEFF抽签时间,中签姓名\n';
+      history.forEach(g=>{
+        g.names.forEach(n=>{
+          csv+=`${g.time},${n}\n`;
+        });
+      });
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=`金穗盲盒中签记录_${new Date().getTime()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('CSV已导出');
+    });
+  }
+  if(clearBtn){
+    clearBtn.addEventListener('click',()=>{
+      if(confirm('确定清空所有中签记录吗？此操作不可恢复')){
+        localStorage.removeItem('lottery-history');
+        renderHistory();
+        toast('已清空全部记录');
+      }
+    });
+  }
+});
+function resetStage(){
+  stageRing.style.display='none';
+  stageWinner.textContent='准备就绪';
+  stageWinners.innerHTML='';
+  /* 更新海报期数 */
+  const period=localStorage.getItem('lottery-period')||'88';
+  const posterPeriod=document.getElementById('posterPeriod');
+  if(posterPeriod)posterPeriod.textContent=period;
+  renderHistory();
+  drawnPool=getNames();
+  remainingDraws=+document.getElementById('maxDraws').value||99;
+  const pass=document.getElementById('drawPasscode').value.trim();
+  if(!pass){
+    drawPassUnlocked=true;
+    stageHint.textContent='点击按钮开始抽签';
+  }else{
+    drawPassUnlocked=false;
+    stageHint.textContent='请输入抽签口令开始';
+  }
+  if(drawnPool.length===0){
+    stageWinner.textContent='未导入名单';
+    stageHint.textContent='请先在后台设置中导入名单';
+  }
+  /* 已抽过则锁定 */
+  if(localStorage.getItem('lottery-draw-used')==='1'){
+    stageWinner.textContent='您已参与过';
+    stageHint.textContent='每人仅一次机会';
+    document.getElementById('resultCard').style.pointerEvents='none';
+    document.getElementById('resultCard').style.opacity='0.7';
+  }
+}
+
+/* 前台口令验证 */
+function checkDrawPwd(){
+  const pass=document.getElementById('drawPasscode').value.trim();
+  const v=document.getElementById('drawPwdInput').value;
+  if(v===pass){
+    document.getElementById('drawPwdModal').classList.remove('on');
+    drawPassUnlocked=true;
+    stageHint.textContent='口令正确，点击按钮开始抽签';
+  }else{
+    document.getElementById('drawPwdErr').classList.add('on');
+  }
+}
+document.getElementById('drawPwdInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter')checkDrawPwd();
+});
+
+/* 加权随机：按签数权重抽一个 */
+function weightedPick(pool){
+  const total=pool.reduce((s,x)=>s+x.weight,0);
+  let r=Math.random()*total;
+  for(let i=0;i<pool.length;i++){
+    r-=pool[i].weight;
+    if(r<=0)return i;
+  }
+  return pool.length-1;
+}
+
+document.getElementById('view-stage').addEventListener('click',(e)=>{
+  /* 点后台按钮不触发 */
+  if(e.target.closest('.stage-enter'))return;
+  /* 点保存按钮不触发 */
+  if(e.target.closest('#saveImgBtn'))return;
+  /* 只有点结果卡片才抽签 */
+  if(!e.target.closest('#resultCard'))return;
+  if(drawnPool.length===0){
+    toast('请先在后台导入名单');
+    return;
+  }
+  if(drawTimer)return;
+  /* 口令未解锁 */
+  if(!drawPassUnlocked){
+    document.getElementById('drawPwdModal').classList.add('on');
+    document.getElementById('drawPwdInput').value='';
+    document.getElementById('drawPwdErr').classList.remove('on');
+    setTimeout(()=>document.getElementById('drawPwdInput').focus(),100);
+    return;
+  }
+  /* 次数用完 */
+  if(remainingDraws<=0){
+    stageHint.textContent='抽签次数已用完';
+    return;
+  }
+  startDraw();
+});
+
+function startDraw(){
+  const drawCount=Math.min(+document.getElementById('drawCount').value,drawnPool.length);
+  stageWinner.textContent='';
+  stageWinners.innerHTML='';
+  stageRing.style.display='grid';
+  stageHint.textContent='抽签中...';
+  drawTimer=setInterval(()=>{
+    stageAnimName.textContent=drawnPool[Math.floor(Math.random()*drawnPool.length)].name;
+  },60);
+
+  setTimeout(()=>{
+    clearInterval(drawTimer);drawTimer=null;
+    stageRing.style.display='none';
+    const winners=[];
+    for(let i=0;i<drawCount;i++){
+      const idx=weightedPick(drawnPool);
+      winners.push(drawnPool.splice(idx,1)[0]);
+    }
+    remainingDraws--;
+    /* 标记已抽过 */
+    localStorage.setItem('lottery-draw-used','1');
+    /* 保存中奖历史（按次分组，带时间） */
+    let history=JSON.parse(localStorage.getItem('lottery-history')||'[]');
+    /* 兼容旧数据：旧的单条数据转成第一组 */
+    if(history.length>0 && typeof history[0]!=='object' || history[0] && history[0].name){
+      const oldNames=history.map(i=>typeof i==='string'?i:i.name);
+      history=[{time:history[0].time||'历史',names:oldNames}];
+    }
+    const now=new Date();
+    const timeStr=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    history.push({time:timeStr,names:winners.map(w=>w.name)});
+    localStorage.setItem('lottery-history',JSON.stringify(history));
+    renderHistory();
+    if(winners.length===1){
+      stageWinner.textContent=winners[0].name;
+    }else{
+      stageWinner.textContent='恭喜';
+      stageWinners.innerHTML=winners.map(w=>`<div class="stage-winner-item">${w.name}</div>`).join('');
+    }
+    document.getElementById('saveImgBtn').style.display='inline-block';
+    if(remainingDraws<=0){
+      stageHint.textContent='抽签次数已用完';
+    }else{
+      stageHint.textContent='点击按钮继续抽签';
+    }
+  },2000);
+}
+
+/* 保存结果图：整页截图直接下载到相册 */
+async function saveResultImg(){
+  const btn=document.getElementById('saveImgBtn');
+  btn.textContent='生成中...';
+  btn.disabled=true;
+  try{
+    const target=document.getElementById('view-stage');
+    const rect=target.getBoundingClientRect();
+    const canvas=await html2canvas(target,{
+      useCORS:true,
+      backgroundColor:'#FFF3D6',
+      scale:2,
+      width:rect.width,
+      height:rect.height,
+      windowWidth:document.documentElement.clientWidth,
+      windowHeight:document.documentElement.clientHeight
+    });
+    const dataUrl=canvas.toDataURL('image/png');
+    /* 创建临时图片，长按可保存到相册 */
+    const imgWin=window.open('','_blank');
+    imgWin.document.write(`<title>长按图片保存到相册</title><body style="margin:0;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${dataUrl}" style="max-width:100%;height:auto"><p style="position:fixed;bottom:20px;left:0;right:0;text-align:center;color:#666;font-size:14px">长按图片 → 保存到相册</p></body>`);
+    imgWin.document.close();
+    toast('已打开图片，长按保存');
+  }catch(e){
+    /* 降级：直接下载 */
+    try{
+      const canvas=await html2canvas(document.getElementById('view-stage'),{useCORS:true,scale:2});
+      const link=document.createElement('a');
+      link.download=`金穗盲盒中奖_${new Date().getTime()}.png`;
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      toast('结果图已下载');
+    }catch(e2){
+      toast('生成失败，请手动截图');
+    }
+  }finally{
+    btn.textContent='长按保存结果图';
+    btn.disabled=false;
+  }
+}
+
+/* 强制删除平台水印 */
+function removeWatermark(){
+  document.querySelectorAll('div').forEach(el=>{
+    const style=getComputedStyle(el);
+    const text=(el.textContent||'').trim();
+    if(style.position==='fixed' && 
+       (text.includes('豆包')||text.includes('AI生成')||text.includes('ai生成')) &&
+       el.getBoundingClientRect().bottom > window.innerHeight-100){
+      el.remove();
+    }
+  });
+}
+setInterval(removeWatermark,1000);
+
+/* 初始化：根据 hash 直接进对应视图 */
+loadData();
+const hash=location.hash;
+if(hash==='#/stage' || hash==='' || hash==='#/'){
+  /* 默认直接进前台 */
+  history.replaceState(null,'','#/stage');
+  showView('view-stage');
+  resetStage();
+}else if(hash==='#/admin'){
+  if(sessionStorage.getItem('lottery-auth')==='1'){
+    goAdmin();
+  }else{
+    /* 没登录直接跳回前台，不弹密码 */
+    history.replaceState(null,'','#/stage');
+    showView('view-stage');
+    resetStage();
+  }
+}else{
+  setCur(0);
+}
+window.addEventListener('hashchange',()=>{
+  if(location.hash==='#/stage' || location.hash==='' || location.hash==='#/'){
+    location.hash='#/stage';
+    goStage();
+  }
+  else if(location.hash==='#/admin'){
+    if(sessionStorage.getItem('lottery-auth')==='1'){
+      goAdmin();
+    }else{
+      /* 没登录直接跳回前台，不弹密码 */
+      location.hash='#/stage';
+    }
+  }
+  else goHome();
+});
+</script>
+</body>
+</html>
